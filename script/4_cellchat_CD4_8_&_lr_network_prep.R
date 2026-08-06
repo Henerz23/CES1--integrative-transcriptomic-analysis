@@ -278,7 +278,7 @@ ccnn_order <- data.frame(
 )
 
 # create figure ready organised LR interaction bubble plot
-a5 <- netVisual_bubble(cellchat, sources.use = sources, 
+c4 <- netVisual_bubble(cellchat, sources.use = sources, 
                  targets.use = c(targets.cd4, targets.cd8),
                  remove.isolate = TRUE, sort.by.source = T, sort.by.target = T,
                  pairLR.use = ccnn_order,
@@ -288,11 +288,25 @@ a5 <- netVisual_bubble(cellchat, sources.use = sources,
   
   coord_flip() +
   RotatedAxis()
-a5
+c4
 
-# save the figure for next script
-# saveRDS(a5, file = "../data/a5.rds")
-# a5 <- readRDS("../data/a5.rds")
+
+##############################
+# Make Figure
+##############################
+
+# Figure 4
+ggdraw() +
+  draw_plot(a4, x = 0, y = .6, width = .5, height = .4) +
+  draw_plot(b4, x = .5, y = .6, width = .5, height = .4) +
+  draw_plot(c4, x = 0, y = 0, width = 1, height = .55) +
+  draw_plot_label(label = c("A", "B", "C"), size = 15, 
+                  x = c(0, .5, 0), 
+                  y = c(1, 1, .6))
+
+# save figure
+ggsave("../figures/Figure_4_cellchat.jpg", width = 40, height = 40, units = c("cm"), dpi = 300)
+
 
 ##############################
 # Saves

@@ -21,11 +21,15 @@ library(ggpubr)
 library(cowplot)
 library(randomcoloR)
 library(scales)
+library(scCustomize)
+library(viridis)
 
 # Establish some colours
 cont_2 <- brewer.pal(9, "YlOrRd")[c(1, 9)]
 grey_red <- c("lightgrey", "#b81f25")
 disc_10 <- brewer.pal(10, "Set3")
+disc_2 <- distinctColorPalette(2)
+pal <- viridis(n = 10, option = "C", direction = -1)
 # set the random seed as 42 for consistent colour generation
 set.seed(42)
 
@@ -43,11 +47,14 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 # Myeloid subset analysis
 ##############################
 
-# load in pbmc
-# pbmc <- readRDS("../data/pbmc_final.rds")
+# retrieve only the cells from the tumour samples
+pbmc_T <- subset(pbmc, SPECIMEN_TYPE %in% c("T"))
 
-# subset the myeloid group
-# done using the previous annotations to avoid spending days clustering the wrong thing before realising it isnt going to work for cellchat
+# save 
+# saveRDS(pbmc_T, file = "../data/pbmc_T.rds")
+# pbmc_T <- readRDS("../data/pbmc_T.rds")
+
+# subset the myeloid group from pbmc
 pbmc_myeloid <- subset(pbmc, clTopLevel %in% c("Myeloid"))
 dim(pbmc_myeloid)
 table(pbmc_myeloid@meta.data$celltype)
@@ -243,7 +250,7 @@ b2 <- DimPlot(pbmc_myeloid, reduction = 'umap',label=F,
 b2
 
 # dotplot all main features
-c2 <- DotPlot(pbmc_myeloid, features = unique(features), cols = cont_2) + 
+c2 <- DotPlot(pbmc_myeloid, features = unique(features), cols = brewer.pal(9, "YlGnBu")[c(1, 9)]) + 
   RotatedAxis() + coord_flip() + 
   labs(y = "Cluster Number")
 c2
@@ -410,11 +417,11 @@ df_avg_CES1_exp <-  pbmc_macrophage@meta.data %>%
 m_comparisons <- list( c("Macro-C1QC", "Macro-SPP1"))
 
 # make a boxplot depicting the average CES1 expression per patient
-d3 <- ggplot(df_avg_CES1_exp, 
+d3 <- ggplot(df_avg_CES1_exp %>% filter(myeloid_type %in% c("Macro-SPP1", "Macro-C1QC") & SPECIMEN_TYPE == "T"), 
              aes(x = myeloid_type, y = avg_CES1_exp, fill = myeloid_type)) +
   # add notches to the boxplot
   geom_boxplot( notch=TRUE, notchwidth = 0.8) +
-  scale_fill_manual(values = distinctColorPalette(4)) +
+  scale_fill_manual(values = disc_2) +
   labs(x = "Cell type", y = "Average Expression") +
   # add statistical test between C1QC and SPP1
   stat_compare_means(comparisons = m_comparisons, 
@@ -430,21 +437,22 @@ d3
 m2_comparisons <- list( c("T", "N"))
 
 # make a boxplot depicting the N vs T
-c3 <- ggplot(df_avg_CES1_exp %>% filter(myeloid_type %in% c("Macro-SPP1", "Macro-C1QC")), 
+c3 <- ggplot(df_avg_CES1_exp, 
              aes(x = SPECIMEN_TYPE, y = avg_CES1_exp, fill = SPECIMEN_TYPE)) +
   scale_fill_discrete("SPECIMEN_TYPE") +
   geom_boxplot(position="dodge", notch=TRUE, notchwidth = 0.8) +
   scale_fill_manual(values = disc_10) +
   labs(x = "Cell type", y = "Average Expression") +
-  facet_wrap(~myeloid_type) +
+  facet_wrap(~forcats::fct_relevel(myeloid_type, "Macro-C1QC", "Macro-SPP1", "Macro-MKI67", "Macro-FCN1")) +
   # do a stats test between the MMRstatuses
   stat_compare_means(comparisons = m2_comparisons,
                      aes(label = after_stat(p.signif)),
                      method = "t.test", paired = FALSE) +
   theme_minimal()  +
   theme(axis.title.x=element_blank(),
-        axis.text.x=element_blank())
+        axis.text.x=element_blank(), legend.position = "left")
 c3
+
 
 ##############################
 # CES1 percentage expressed
@@ -454,15 +462,16 @@ c3
 # first make a summary dataframe
 exp_pct_S_C <-  pbmc_macrophage@meta.data %>%
   # group by
-  group_by(orig.ident, myeloid_type) %>%
+  group_by(orig.ident, myeloid_type, SPECIMEN_TYPE) %>%
   ##the summarise function
   summarise(percent_CES1_exp = mean(CES1_isExpressed) * 100)
 
 # make a boxplot depicting the percentage CES1 expressed per patient
-e3 <- ggplot(exp_pct_S_C, aes(x = myeloid_type, y = percent_CES1_exp, fill = myeloid_type)) +
+e3 <- ggplot(exp_pct_S_C %>% filter(myeloid_type %in% c("Macro-SPP1", "Macro-C1QC") & SPECIMEN_TYPE == "T"), 
+             aes(x = myeloid_type, y = percent_CES1_exp, fill = myeloid_type)) +
   # add notches
   geom_boxplot(notch=TRUE, notchwidth = 0.8) +
-  scale_fill_manual(values = distinctColorPalette(4)) +
+  scale_fill_manual(values = disc_2) +
   labs(x = "Cell type", y = "Percent Expressed") +
   # add stats test 
   stat_compare_means(comparisons = m_comparisons, 
@@ -474,14 +483,18 @@ e3 <- ggplot(exp_pct_S_C, aes(x = myeloid_type, y = percent_CES1_exp, fill = mye
 e3
 
 
+##############################
+# Make Figures
+##############################
+
 # Figure 2
 ggdraw() +
-  draw_plot(a2, x = 0, y = .5, width = .5, height = .5) +
-  draw_plot(b2, x = .5, y = .5, width = .5, height = .5) +
-  draw_plot(c2, x = 0, y = 0, width = .5, height = .4) +
-  draw_plot(d2, x = .5, y = 0, width = .5, height = .5) +
+  draw_plot(a2, x = 0, y = .6, width = .45, height = .4) +
+  draw_plot(b2, x = .5, y = .6, width = .4, height = .4) +
+  draw_plot(c2, x = 0, y = 0, width = .6, height = .5) +
+  draw_plot(d2, x = .6, y = .1, width = .4, height = .4) +
   draw_plot_label(label = c("A", "B", "C", "D"), size = 15, 
-                  x = c(0, .5, 0, .5), 
+                  x = c(0, .5, 0, .6), 
                   y = c(1, 1, .5, .5))
 ggsave("../figures/Figure_2_myeloid_general.jpg", width = 40, height = 25, units = c("cm"), dpi = 300)
 
@@ -489,11 +502,11 @@ ggsave("../figures/Figure_2_myeloid_general.jpg", width = 40, height = 25, units
 ggdraw() +
   draw_plot(a3, x = 0, y = .5, width = .33, height = .5) +
   draw_plot(b3, x = .33, y = .5, width = .23, height = .5) +
-  draw_plot(c3, x = .56, y = .5, width = .43, height = .5) +
-  draw_plot(d3, x = .1, y = 0, width = .33, height = .5) +
-  draw_plot(e3, x = .44, y = 0, width = .48, height = .5) +
+  draw_plot(c3, x = .56, y = 0, width = .43, height = 1) +
+  draw_plot(d3, x = 0, y = 0, width = .22, height = .5) +
+  draw_plot(e3, x = .22, y = 0, width = .34, height = .5) +
   draw_plot_label(label = c("A", "B", "C", "D", "E"), size = 15, 
-                  x = c(0, .33, .56, .1, .44), 
+                  x = c(0, .33, .56, .0, .22), 
                   y = c(1, 1, 1, .5, .5))
 ggsave("../figures/Figure_3_myeloid_ces1.jpg", width = 30, height = 20, units = c("cm"), dpi = 300)
 

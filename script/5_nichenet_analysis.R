@@ -3,7 +3,7 @@
 ###########################################################
 
 # Part 1: a function will be used to loop over the distinct LR networks to generate distinct gene expression heatmaps for each 
-# Part 2: data exploration and figure creation
+# Part 2: visualisation
 
 
 ###########################################################
@@ -463,7 +463,8 @@ mat_list <- Map(function(m, i) {colnames(m) <- paste0(colnames(m), "_", i)
 mega_heatmap_up <- do.call(cbind, mat_list)
 
 # save mega heatmap full
-saveRDS(mega_heatmap_up, file = "../data/mega_heatmap_up.rds")
+# saveRDS(mega_heatmap_up, file = "../data/mega_heatmap_up.rds")
+mega_heatmap_up <- readRDS("../data/mega_heatmap_up.rds")
 
 # visualisation step
 # too many genes are present
@@ -475,100 +476,16 @@ nrow(mega_heatmap_up)
 
 
 # visualise the mega matrix ligand target network
-b5 <- mega_heatmap_up %>%
+a5 <- mega_heatmap_up %>%
   make_heatmap_ggplot(
-    y_name = paste("Target genes in "),
-    x_name = paste("prioritized ligands "),
+    y_name = paste("Target Genes"),
+    x_name = paste("Prioritised Ligands"),
     color = "purple",
     legend_title = "Regulatory\npotential"
   ) +
   theme(axis.text.x = element_text(face = "italic")) +
   coord_flip()
-b5
+a5
 
-
-##############################
-# identify genes expressed through specific typesof interaction
-##############################
-
-
-# load appropriate library
-library(ComplexUpset)
-
-geneset_lists <- list()
-
-# loop version
-# loop over the different interaction conditions
-for (nm in names(results)) {
-  # include gene expression
-  mat <- results[[nm]]$gene_expression
-  # skip if NULL or empty
-  if (is.null(mat) || nrow(mat) == 0 || ncol(mat) == 0) {
-    next
-  }
-  # ensure matrix
-  mat <- as.matrix(mat)
-  # keep genes with any expression signal
-  expressed_genes <- rownames(mat)[rowSums(!is.na(mat) & mat > 0) > 0]
-  # add to geneset lists
-  geneset_lists[[nm]] <- expressed_genes
-}
-
-
-# sort
-all_geneset <- sort(unique(unlist(geneset_lists)))
-# covert to dataframe
-geneset_df <- data.frame(geneset = all_geneset)
-
-# loop over dataframes
-for (nm in names(geneset_lists)) {
-  geneset_df[[nm]] <- all_geneset %in% geneset_lists[[nm]]
-}
-
-# add row names
-rownames(geneset_df) <- geneset_df$geneset
-geneset_df$geneset <- NULL
-
-# plot
-ComplexUpset::upset(
-  geneset_df,
-  intersect = colnames(geneset_df),
-  sort_intersections_by = "degree",
-  sort_sets = "descending",
-  keep_empty_groups = TRUE,
-  base_annotations = list("Intersection size" = intersection_size()))
-
-# get a list of each gene in each group
-geneset_logical <- geneset_df > 0
-group_key <- apply(
-  geneset_logical,
-  1,
-  function(x) paste(colnames(geneset_logical)[x], collapse = "///")
-)
-groups <- split(rownames(geneset_logical), group_key)
-group_table <- data.frame(
-  group = names(groups),
-  genes = sapply(groups, paste, collapse = ", ")
-)
-
-# display groups
-groups
-# save groups
-saveRDS(groups, file = "../data/nichenet_gene_groups.rds")
-
-##############################
-# Make Figure
-##############################
-
-# save the figure for next script
-# a5 <- readRDS("../data/a5.rds")
-
-# Figure 5
-ggdraw() +
-  draw_plot(a5, x = 0, y = .5, width = 1, height = .5) +
-  draw_plot(b5, x = 0, y = 0, width = 1, height = .5) +
-  draw_plot_label(label = c("A", "B"), size = 15, 
-                  x = c(0, 0), 
-                  y = c(1, .5))
-# save figure
-ggsave("../figures/Figure_5_nichenet_general.jpg", width = 40, height = 40, units = c("cm"), dpi = 300)
+# save first figure half
+saveRDS(a5, "../figures/a5.rds")

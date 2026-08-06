@@ -44,10 +44,6 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 pbmc <- readRDS("../data/pbmc_final.rds")
 
 # retrieve only the cells from the tumour samples
-pbmc_T <- subset(pbmc, SPECIMEN_TYPE %in% c("T"))
-
-# save 
-# saveRDS(pbmc_T, file = "../data/pbmc_T.rds")
 # pbmc_T <- readRDS("../data/pbmc_T.rds")
 
 
@@ -176,13 +172,15 @@ netVisual_circle(
 
 # show circle plot
 # interaction weights
-netVisual_circle(
+a4 <- netVisual_circle(
   mat.weight.out,
+  sources.use = c("Myeloid: Macro-SPP1","Myeloid: Macro-C1QC"),
   vertex.weight = groupSize,
   weight.scale = TRUE,
   label.edge = FALSE,
-  title.name = "Outgoing interaction strength from Macro-SPP1/C1QC"
+  title.name = "Interaction Strength"
 )
+a4
 
 
 ##############################
@@ -195,22 +193,22 @@ mat.weight.out <- cellchat@net$weight[c("Myeloid: Macro-SPP1","Myeloid: Macro-C1
 mat.count.out <- cellchat@net$count[c("Myeloid: Macro-SPP1","Myeloid: Macro-C1QC"),
                                     !grepl("^Myeloid", colnames(cellchat@net$count))]
 
-a4 <- pheatmap::pheatmap(
+pheatmap::pheatmap(
   mat.weight.out,
   cluster_rows = FALSE,
   cluster_cols = FALSE, 
   main = "Interaction Weight",
   color = brewer.pal(9, "YlOrRd"))
-a4
 
-b4 <- pheatmap::pheatmap(
+
+pheatmap::pheatmap(
   mat.count.out,
   cluster_rows = FALSE,
   cluster_cols = FALSE, 
   main = "Interaction Count",
   brewer.pal(9, "YlOrRd")
 )
-b4
+
 
 # save the cellchat object for later visualisation
 # saveRDS(cellchat, file = "../data/cellchat_MtoAll.rds")
@@ -372,13 +370,14 @@ netVisual_circle(
 
 # interaction weights
 # show circle plot
-netVisual_circle(
+b4 <- netVisual_circle(
   mat.weight.out,
+  sources.use = c("Myeloid: Macro-SPP1","Myeloid: Macro-C1QC"),
   vertex.weight = groupSize,
   weight.scale = TRUE,
   label.edge = FALSE,
-  title.name = "Outgoing interaction strength from Macro-SPP1/C1QC")
-
+  title.name = "Interaction Strength (T cells)")
+b4
 
 ##############################
 # heatmap
@@ -391,18 +390,16 @@ mat.count.out <- cellchat@net$count[c("Myeloid: Macro-SPP1","Myeloid: Macro-C1QC
                                     !grepl("^Myeloid", colnames(cellchat@net$count))]
 
 # create heatmap 
-c4 <- pheatmap::pheatmap(mat.weight.out,
+pheatmap::pheatmap(mat.weight.out,
                cluster_rows = FALSE,
                cluster_cols = FALSE, 
                main = "Interaction Weight (T Cells)",
                brewer.pal(9, "YlOrRd"))
-c4
 
-d4 <- pheatmap::pheatmap(mat.count.out,
+pheatmap::pheatmap(mat.count.out,
                cluster_rows = FALSE,
                cluster_cols = FALSE, main = "Interaction Count (T Cells)",
                brewer.pal(9, "YlOrRd"))
-d4
 
 
 ##############################
@@ -410,16 +407,9 @@ d4
 ##############################
 
 # Figure 4
-ggdraw() +
-  draw_plot(a4$gtable, x = 0, y = .5, width = .5, height = .5) +
-  draw_plot(b4$gtable, x = .5, y = .5, width = .5, height = .5) +
-  draw_plot(c4$gtable, x = 0, y = 0, width = .5, height = .5) +
-  draw_plot(d4$gtable, x = .5, y = 0, width = .5, height = .5) +
-  draw_plot_label(label = c("A", "B", "C", "D"), size = 15, 
-                  x = c(0, .5, .0, .5), 
-                  y = c(1, 1, .5, .5))
-# save figure
-ggsave("../figures/Figure_4_cc_general.jpg", width = 30, height = 15, units = c("cm"), dpi = 300)
+# save the first parts of the figures for later plotting
+# saveRDS(a4, file = "../figures/a4.rds")
+# saveRDS(b4, file = "../figures/a4.rds")
 
 
 ##############################

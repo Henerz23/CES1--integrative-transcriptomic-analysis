@@ -92,10 +92,10 @@ pbmc_stromal <- FindClusters(pbmc_stromal, resolution = 0.8 )
 pbmc_stromal <- RunUMAP(pbmc_stromal, dims = dim.use)
 
 # plot clusters
-a8 <- DimPlot(pbmc_stromal, reduction = 'umap',label=F, 
+a6 <- DimPlot(pbmc_stromal, reduction = 'umap',label=F, 
               group.by = 'clMidwayPr', cols = distinctColorPalette(5)) +
   ggtitle(NULL)
-a8
+a6
 
 
 ##############################
@@ -157,7 +157,7 @@ DotPlot(pbmc_CAF, features = 'CES1', cols = cont_2, group.by = "cl295v11SubFull"
 
 
 # bar chart showing the distribution of normal and tumour cells between fibroblasts 
-b8 <- ggplot(
+ggplot(
   pbmc_stromal@meta.data %>% filter(CES1_isExpressed),
   aes(x = clMidwayPr, fill = SPECIMEN_TYPE)
 ) +
@@ -173,7 +173,7 @@ b8 <- ggplot(
     axis.text.x = element_text(angle = 45, hjust = 1),
     axis.title.x=element_blank())
 
-b8
+
 
 
 ##############################
@@ -191,10 +191,17 @@ df_avg_CES1_exp_f <-  pbmc_stromal@meta.data %>%
 f_comparisons <- list(c("Fibro", "Endo"), 
                       c("Fibro", "Peri"), 
                       c("Fibro", "Schwann"),
-                      c("Fibro", "SmoothMuscle"))
+                      c("Fibro", "SmoothMuscle")# ,
+                      # c("Endo", "Peri"),
+                      # c("Endo", "Schwann"),
+                      # c("Endo", "SmoothMuscle"),
+                      # c("Peri", "Schwann"),
+                      # c("Peri", "SmoothMuscle"),
+                      # c("Schwann", "SmoothMuscle")
+                      )
 
 # make a boxplot depicting the average CES1 expression per patient
-c8 <- ggplot(df_avg_CES1_exp_f, aes(x = clMidwayPr, y = avg_CES1_exp, fill = clMidwayPr)) +
+b6 <- ggplot(df_avg_CES1_exp_f, aes(x = clMidwayPr, y = avg_CES1_exp, fill = clMidwayPr)) +
   # 
   geom_boxplot(position="dodge", notch=TRUE, notchwidth = 0.8) +
   # 
@@ -206,7 +213,7 @@ c8 <- ggplot(df_avg_CES1_exp_f, aes(x = clMidwayPr, y = avg_CES1_exp, fill = clM
   theme_minimal()  +
   theme(axis.title.x=element_blank(), axis.text.x = element_blank(),
         legend.position = "none")
-c8
+b6
 
 
 ##############################
@@ -222,7 +229,7 @@ exp_pct_S_C_f <-  pbmc_stromal@meta.data %>%
   summarise(percent_CES1_exp = mean(CES1_isExpressed) * 100)
 
 # make a boxplot depicting the percentage CES1 expressed per patient
-d8 <- ggplot(exp_pct_S_C_f, aes(x = clMidwayPr, y = percent_CES1_exp, fill = clMidwayPr)) +
+c6 <- ggplot(exp_pct_S_C_f, aes(x = clMidwayPr, y = percent_CES1_exp, fill = clMidwayPr)) +
   # 
   geom_boxplot(notch=TRUE, notchwidth = 0.8) +
   scale_fill_manual(values = disc_10) +
@@ -233,7 +240,7 @@ d8 <- ggplot(exp_pct_S_C_f, aes(x = clMidwayPr, y = percent_CES1_exp, fill = clM
                      method = "t.test") +
   theme_minimal() +
   theme(axis.title.x=element_blank(), axis.text.x=element_blank())
-d8
+c6
 
 
 ##############################
@@ -525,7 +532,7 @@ ccnn_order <- data.frame(
 )
 
 # create ordered figure
-a7 <- netVisual_bubble(cellchat, sources.use = sources, 
+d6 <- netVisual_bubble(cellchat, sources.use = sources, 
                  targets.use = c(targets.fibro),
                  remove.isolate = TRUE, sort.by.source = T, sort.by.target = T,
                  pairLR.use = ccnn_order,
@@ -535,7 +542,24 @@ a7 <- netVisual_bubble(cellchat, sources.use = sources,
   
   coord_flip() +
   RotatedAxis()
-a7
+d6
+
+
+##############################
+# Make Figure
+##############################
+
+# Figure 7
+ggdraw() +
+  draw_plot(a6, x = 0, y = .5, width = .5, height = .5) +
+  draw_plot(b6, x = .5, y = .5, width = .2, height = .5) +
+  draw_plot(c6, x = .7, y = .5, width = .3, height = .5) +
+  draw_plot(d6, x = 0, y = 0, width = 1, height = .45) +
+  draw_plot_label(label = c("A", "B", "C", "D"), size = 15, 
+                  x = c(0, .5, .7, 0), 
+                  y = c(1, 1, 1, .5))
+# save figure
+ggsave("../figures/Figure_6_cellchat_Fibro.jpg", width = 40, height = 30, units = c("cm"), dpi = 300)
 
 
 ##############################
@@ -586,7 +610,7 @@ targets.fibro <- unique(pbmc@meta.data$cell_type_detailed[pbmc@meta.data$clMidwa
 seurat_obj <- subset(pbmc, cell_type_detailed %in% c(targets.fibro, "Myeloid: Macro-C1QC", "Myeloid: Macro-SPP1"))
 seurat_obj <- subset(seurat_obj, !(SPECIMEN_TYPE == "N" & cell_type_detailed %in% c("Myeloid: Macro-SPP1", "Myeloid: Macro-C1QC")))
 
-# need to make the idents the spp1/ c1qc labels then just CD8 and CD4
+# need to make the idents the spp1/ c1qc labels then just fibro
 seurat_obj@meta.data$cclabels <- ifelse(
   seurat_obj@meta.data$clTopLevel == "Myeloid",
   seurat_obj@meta.data$cell_type_detailed,
@@ -983,7 +1007,7 @@ m}, mat_list, seq_along(mat_list))
 mega_heatmap_up <- do.call(cbind, mat_list)
 
 # save the mega heatmap
-saveRDS(mega_heatmap_up, file = "../data/mega_heatmap_up_Fibro.rds")
+# saveRDS(mega_heatmap_up, file = "../data/mega_heatmap_up_Fibro.rds")
 
 # too many genes are present
 # remove genes that have a lower regulatory potential
@@ -994,7 +1018,7 @@ nrow(mega_heatmap_up)
 
 
 # visualise the mega matrix ligand target network
-b7 <- mega_heatmap_up %>%
+a7 <- mega_heatmap_up %>%
   make_heatmap_ggplot(
     y_name = paste("Target genes in "),
     x_name = paste("prioritized ligands "),
@@ -1003,7 +1027,7 @@ b7 <- mega_heatmap_up %>%
   ) +
   theme(axis.text.x = element_text(face = "italic")) +
   coord_flip()
-b7
+a7
 
 
 ##############################
@@ -1032,7 +1056,7 @@ for (nm in names(results)) {
   # ensure matrix
   mat <- as.matrix(mat)
   # keep genes with any expression signal
-  expressed_genes <- rownames(mat)[rowSums(!is.na(mat) & mat > 0) > 0]
+  expressed_genes <- rownames(mat)[rowSums(!is.na(mat) & mat > 0.15) > 0]
   # add to geneset lists
   geneset_lists[[nm]] <- expressed_genes
 }
@@ -1053,13 +1077,14 @@ rownames(geneset_df) <- geneset_df$geneset
 geneset_df$geneset <- NULL
 
 # plot
-ComplexUpset::upset(
+b7 <- ComplexUpset::upset(
   geneset_df,
   intersect = colnames(geneset_df),
   sort_intersections_by = "degree",
   sort_sets = "descending",
   keep_empty_groups = TRUE,
   base_annotations = list("Intersection size" = intersection_size()))
+b7
 
 # get a list of each gene in each group
 geneset_logical <- geneset_df > 0
@@ -1076,21 +1101,7 @@ group_table <- data.frame(
 
 # display groups
 groups
-# saveRDS(groups, file = "../data/nichenet_gene_groups_Fibro.rds")
-
-##############################
-# Make Figure
-##############################
-
-# Figure 7
-ggdraw() +
-  draw_plot(a7, x = 0, y = .5, width = 1, height = .5) +
-  draw_plot(b7, x = 0, y = 0, width = 1, height = .5) +
-  draw_plot_label(label = c("A", "B"), size = 15, 
-                  x = c(0, 0), 
-                  y = c(1, .5))
-# save figure
-ggsave("../figures/Figure_7_nichenet_general_Fibro.jpg", width = 40, height = 30, units = c("cm"), dpi = 300)
+saveRDS(groups, file = "../data/nichenet_gene_groups_Fibro.rds")
 
 
 ##############################
@@ -1101,29 +1112,22 @@ ggsave("../figures/Figure_7_nichenet_general_Fibro.jpg", width = 40, height = 30
 results <- readRDS("../data/nichenet_results_fibro.rds")
 groups <- readRDS("../data/nichenet_gene_groups_Fibro.rds")
 
-# include only gene which are exclusive to SPP1
-spp1_Fibro_up_only_conditions <- c(groups$lr_spp1_Fibro_up)
-
 # isolate only important ligands
-heatmap_spp1_Fibro_up <- results$lr_spp1_Fibro_up$gene_expression[, colnames(results$lr_spp1_Fibro_up$gene_expression) %in% c("VEGFA", "TGFB1")]
-heatmap_spp1_Fibro_up <- heatmap_spp1_Fibro_up[rownames(heatmap_spp1_Fibro_up) %in% spp1_Fibro_up_only_conditions, ]
-
-# filter for appropriate display sizze
-nrow(heatmap_spp1_Fibro_up)
-keep <- apply(heatmap_spp1_Fibro_up, 1, function(x) max(x) >= 0.25)
-heatmap_spp1_Fibro_up <- heatmap_spp1_Fibro_up[keep, , drop = FALSE]
-nrow(heatmap_spp1_Fibro_up)
+heatmap_spp1_Fibro_up <- results$lr_spp1_Fibro_up$gene_expression
+heatmap_spp1_Fibro_up <- heatmap_spp1_Fibro_up[rownames(heatmap_spp1_Fibro_up) %in% groups$lr_spp1_Fibro_up, ]
 
 # plot
-e8 <- heatmap_spp1_Fibro_up %>% make_heatmap_ggplot(
-  y_name = paste("Target genes in "),
-  x_name = paste("prioritized ligands "),
+heatmap_spp1_Fibro_up %>% make_heatmap_ggplot(
+  y_name = paste("Target Genes"),
+  x_name = paste("Prioritised Ligands"),
   color = "purple",
   legend_title = "Regulatory\npotential"
 ) +
-  theme(axis.text.x = element_text(face = "italic")) 
-e8
+  theme(axis.text.x = element_text(face = "italic")) +
+  ggtitle("Unique Genes from \nlr_spp1_Fibro_up")
 
+# C1QC
+# no genes present
 
 ##############################
 # Load Libraries
@@ -1143,84 +1147,83 @@ library(enrichplot)
 # read in the heatmap file
 mega_heatmap_up <- readRDS("../data/mega_heatmap_up_Fibro.rds")
 
-# run a loop for only SPP1-Fibro
-x = c("_1")
-plots <- list()
+x <- c("TGFB1_1", "VEGFA_1", "RETN_1", "HBEGF_1")
+group_labels <- c("TGFB1_1" = "TGFB", "VEGFA_1" = "VEGF", "RETN_1" = "RETN", "HBEGF_1" = "HBEGF")
 
-# loop over all DE genes for each group exclusive to SPP1
-# identifies the main biological processes that the genes are driving 
+# ---- build per-group gene lists (ENTREZ) + collect backgrounds ----
+gene_list <- list()
+background_list <- list()
+top_n_genes <- 250
+
 for (numb in x) {
+  
   genes <- mega_heatmap_up %>%
     as.data.frame() %>%
     mutate(
       gene = rownames(.),
       max_rp = do.call(pmax, c(dplyr::select(., ends_with(numb)), na.rm = TRUE))
     ) %>%
-    filter(max_rp > 0) %>%
+    filter(max_rp > 0) %>%                 # drop true zeros only
     arrange(desc(max_rp)) %>%
+    slice_head(n = top_n_genes) %>%         # relative, per-group cutoff
     pull(gene)
   
   ids <- bitr(genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
   
-  # specify background expressed gene set (still gene symbols at this point)
+  gene_list[[group_labels[[numb]]]] <- ids$ENTREZID
+  
   background_expressed_genes <- switch(
     numb,
-    "_1" = results$lr_spp1_Fibro_up$background_expressed_genes
+    "TGFB1_1" = results$lr_spp1_Fibro_up$background_expressed_genes,
+    "VEGFA_1" = results$lr_spp1_Fibro_up$background_expressed_genes,
+    "RETN_1" = results$lr_spp1_Fibro_up$background_expressed_genes,
+    "HBEGF_1" = results$lr_spp1_Fibro_up$background_expressed_genes
   )
   
-  # convert the universe to ENTREZ IDs too, since keyType = "ENTREZID" below
-  universe_ids <- bitr(background_expressed_genes, fromType = "SYMBOL",
-                       toType = "ENTREZID", OrgDb = org.Hs.eg.db)$ENTREZID
-  
-  ego <- enrichGO(
-    gene = ids$ENTREZID,
-    OrgDb = org.Hs.eg.db,
-    keyType = "ENTREZID",
-    ont = "BP",
-    universe = universe_ids
-  )
-  
-  if (is.null(ego) || nrow(ego@result) == 0) {
-    message("No enriched GO terms for ", numb, " — skipping")
-    next
-  }
-  
-  s_ego<-clusterProfiler::simplify(ego)
-  
-  # plot results and add to list
-  plots[[numb]] <-  s_ego %>% filter(p.adjust < 0.03) %>%
-    ggplot(showCategory = 20,
-           aes(GeneRatio, forcats::fct_reorder(Description, GeneRatio))) + 
-    geom_segment(aes(xend=0, yend = Description)) +
-    geom_point(aes(color=p.adjust, size = Count)) +
-    scale_color_viridis_c(guide=guide_colorbar(reverse=TRUE)) +
-    scale_size_continuous(range=c(1, 7)) +
-    theme_minimal() + 
-    xlab("Gene Ratio") +
-    ylab(NULL) + 
-    ggtitle("GO Enrichment of up-regulated genes")
+  background_list[[group_labels[[numb]]]] <- background_expressed_genes
 }
 
-# add list to figure variables
-f8 <- plots[["_1"]]
+# ---- shared universe: union of all three backgrounds, converted once ----
+all_background_symbols <- unique(unlist(background_list))
+
+universe_ids <- bitr(
+  all_background_symbols,
+  fromType = "SYMBOL",
+  toType   = "ENTREZID",
+  OrgDb    = org.Hs.eg.db
+)$ENTREZID
+
+# ---- compareCluster across the three groups ----
+cc <- compareCluster(
+  geneCluster   = gene_list,
+  fun           = "enrichGO",
+  OrgDb         = org.Hs.eg.db,
+  keyType       = "ENTREZID",
+  ont           = "BP",
+  universe      = universe_ids,
+  pAdjustMethod = "BH")
+
+cc_simplified <- clusterProfiler::simplify(cc)
+
+# ---- plot ----
+dotplot(cc_simplified, showCategory = 20) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  xlab(NULL) + ylab(NULL)
 
 
 ##############################
 # Make figures
 ##############################
 
-# make figure 8
+
+# make figure 7 variation 2
 ggdraw() +
-  draw_plot(a8, x = 0, y = .5, width = .66, height = .5) +
-  draw_plot(b8, x = .66, y = .5, width = .33, height = .5) +
-  draw_plot(c8, x = 0, y = 0, width = .25, height = .5) +
-  draw_plot(d8, x = .25, y = 0, width = .25, height = .5) +
-  draw_plot(e8, x = .5, y = 0, width = .1, height = .5) +
-  draw_plot(f8, x = .6, y = 0, width = .4, height = .5) +
-  draw_plot_label(label = c("A", "B", "C", "D", "E", "F"), size = 15, 
-                  x = c(0, .66, 0, .25, .5, .6), 
-                  y = c(1, 1, .5, .5, .5, .5))
+  draw_plot(a7, x = 0, y = .5, width = 1, height = .5) +
+  draw_plot(b7, x = 0, y = .0, width = .5, height = .5)+
+  draw_plot_label(label = c("A", "B"), size = 15, 
+                  x = c(0, 0), 
+                  y = c(1, .5))
 
 # save figure
-ggsave("../figures/Figure_8_fibroblast.jpg", width = 40, height = 20, units = c("cm"), dpi = 300)
-
+ggsave("../figures/Figure_7_nichenet_fibro.jpg", width = 40, height = 30, units = c("cm"), dpi = 300)

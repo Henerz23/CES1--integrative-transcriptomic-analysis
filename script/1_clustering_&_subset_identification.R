@@ -17,6 +17,7 @@ library(RColorBrewer)
 library(tidyverse)
 library(cowplot)
 
+
 # Colours!
 cont_2 <- brewer.pal(9, "YlOrRd")[c(1, 9)]
 grey_red <- c("lightgrey", "#b81f25")
@@ -228,23 +229,23 @@ pbmc <- AddMetaData(pbmc, metadata = cluster_data)
 Idents(pbmc) <- "clTopLevel"
 
 # save featureplot of CES1
-d1 <- FeaturePlot(pbmc, features = c("CES1"), label = F,
-            reduction = "umap", pt.size = 1, cols = c("lightyellow", "black"))+
-              NoLegend() +
-              ggtitle(NULL)
+c1 <- FeaturePlot(pbmc, features = c("CES1"), label = F,
+            reduction = "umap", cols = cont_2, order = T, pt.size = 0.1)+
+            NoLegend() +
+            ggtitle(NULL)
 
 # add figure legend to clearly distinguish between cells expressing and not expressing CES1
-d1 <- d1 +
-  annotate("point", x = -15, y = -15, colour = "black", size = 4) +
+c1 <- c1 +
+  annotate("point", x = -15, y = -15, colour = cont_2[2], size = 4) +
   annotate("text",  x = -14, y = -15, label = "Expressing CES1", hjust = 0, size = 4) +
-  annotate("point", x = -15, y = -17, colour = "lightyellow", size = 4) +
+  annotate("point", x = -15, y = -17, colour = cont_2[1], size = 4) +
   annotate("text",  x = -14, y = -17, label = "Not Expressing CES1", hjust = 0, size = 4) 
-d1
+c1
 
 # save dotplot of CES1
-b1 <- DotPlot(pbmc, features = 'CES1', cols = cont_2) + RotatedAxis() +
+d1 <- DotPlot(pbmc, features = 'CES1', cols = cont_2) + RotatedAxis() +
   theme(axis.title.x=element_blank(), axis.title.y=element_blank())
-b1
+d1
 
 # Stromal have high levels of CES1
 # check with just immune cells
@@ -259,19 +260,19 @@ a1 <- DimPlot(pbmc, reduction = "umap", group.by = 'clTopLevel' ,label = F, cols
 a1
 
 # save umap with Normal/Tumour labels
-c1 <- DimPlot(pbmc, reduction = "umap", group.by = 'SPECIMEN_TYPE' ,label = F, cols = disc_10) +
+b1 <- DimPlot(pbmc, reduction = "umap", group.by = 'SPECIMEN_TYPE' ,label = F, cols = disc_10) +
   ggtitle(NULL)
-c1
+b1
 
 # Figure 1
 ggdraw() +
-  draw_plot(a1, x = 0, y = .33, width = .66, height = .66) +
-  draw_plot(b1, x = .66, y = .5, width = .33, height = .5) +
-  draw_plot(c1, x = .1, y = 0, width = .33, height = .33) +
-  draw_plot(d1, x = .5, y = 0, width = .5, height = .5) +
+  draw_plot(a1, x = 0, y = .5, width = .5, height = .5) +
+  draw_plot(b1, x = .5, y = .5, width = .5, height = .5) +
+  draw_plot(c1, x = 0, y = 0, width = .5, height = .5) +
+  draw_plot(d1, x = .5, y = 0, width = .3, height = .5) +
   draw_plot_label(label = c("A", "B", "C", "D"), size = 15, 
-                  x = c(0, .66, .1, .53), 
-                  y = c(1, 1, .33, .5))
+                  x = c(0, .5, 0, .5), 
+                  y = c(1, 1, .5, .5))
 # save
 ggsave("../figures/Figure_1_general.jpg", width = 30, height = 20, units = c("cm"), dpi = 300)
 
