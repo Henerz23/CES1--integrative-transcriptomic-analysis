@@ -433,6 +433,10 @@ d3 <- ggplot(df_avg_CES1_exp %>% filter(myeloid_type %in% c("Macro-SPP1", "Macro
         axis.text.x=element_blank())
 d3
 
+# exact values
+median(d3$data$avg_CES1_exp[d3$data$myeloid_type == "Macro-SPP1"])
+median(d3$data$avg_CES1_exp[d3$data$myeloid_type == "Macro-C1QC"])
+
 # add comparisons values for later stats test
 m2_comparisons <- list( c("T", "N"))
 
@@ -481,6 +485,10 @@ e3 <- ggplot(exp_pct_S_C %>% filter(myeloid_type %in% c("Macro-SPP1", "Macro-C1Q
   # make clean for figure
   theme(axis.title.x=element_blank(), axis.text.x=element_blank())
 e3
+
+# exact median values
+median(e3$data$percent_CES1_exp[e3$data$myeloid_type == "Macro-SPP1"])
+median(e3$data$percent_CES1_exp[e3$data$myeloid_type == "Macro-C1QC"])
 
 
 ##############################

@@ -281,6 +281,148 @@ options(stringsAsFactors = FALSE)
 
 
 ##############################
+# Exploration of SPP1/C1QC interactions with Stromal cell subtypes
+##############################
+
+
+# check the number of each specific cell type are sufficient
+table(pbmc_T@meta.data$clMidwayPr[pbmc_T@meta.data$clTopLevel %in% c("Strom")])
+
+# Make a new dataset with alternative labels
+df7 <- pbmc_T
+
+# use the top level labels, but with myeloid cells removed and replaced with SPP1 and C1QC level labels
+# Add CellChat labels first
+df7@meta.data$cclabels <- ifelse(
+  df7@meta.data$clTopLevel == "Myeloid",
+  df7@meta.data$cell_type_detailed,
+  df7@meta.data$clMidwayPr
+)
+
+# subset into my second dataframe
+# Keep non-myeloids + selected macrophage subsets
+keep_cells <- rownames(df7@meta.data)[
+  df7@meta.data$clTopLevel == "Strom" |
+    df7@meta.data$cell_type_detailed %in% c(
+      "Myeloid: Macro-SPP1",
+      "Myeloid: Macro-C1QC")]
+
+df7 <- subset(df7, cells = keep_cells)
+
+
+# add the midway annotations of the Fibroblasts
+# and the detailed annotations of macrophages
+df7@meta.data$cclabels <- ifelse(
+  df7@meta.data$clTopLevel == "Myeloid",
+  df7@meta.data$cell_type_detailed,
+  df7@meta.data$clMidwayPr
+)
+
+# set these labels as the identities
+Idents(df7) <- df7@meta.data$cclabels
+
+# downsample to reduce computational cost
+table(df7@meta.data$cclabels)
+df7 <- subset(
+  df7,
+  downsample = 500 
+)
+table(df7@meta.data$cclabels)
+
+# add a samples column for cellchat 
+df7$samples <- factor(df7$orig.ident)
+
+
+##############################
+# Data input & processing and initialization of CellChat object
+##############################
+
+# create the cellchat object
+cellchat <- createCellChat(object = df7, 
+                           group.by = "cclabels",
+                           assay = "RNA") # use lognormalised assay data
+
+# load database and select interactions
+CellChatDB <- readRDS("../data/cellchat_db.rds")
+
+# use all CellChatDB for cell-cell communication analysis
+cellchat@DB <- CellChatDB
+
+# subset the expression data of signaling genes for saving computation cost
+cellchat <- subsetData(cellchat)
+
+# identify over-expressed signalling genes in each group
+cellchat <- identifyOverExpressedGenes(cellchat, do.fast = TRUE)
+
+# identify over expressed ligand-receptor interactions
+cellchat <- identifyOverExpressedInteractions(cellchat)
+
+
+##############################
+# Inference of cell-cell communication network
+##############################
+
+# Compute the communication probability and infer cellular communication network
+# nboot = 20 as a low power preliminary screen
+cellchat <- computeCommunProb(cellchat, type = "triMean", raw.use = TRUE, nboot = 20)
+
+# Filter out the cell-cell communication if there are only few number of cells in certain cell groups
+cellchat <- filterCommunication(cellchat, min.cells = 10)
+
+# Infer the cell-cell communication at a signaling pathway level
+cellchat <- computeCommunProbPathway(cellchat)
+
+# Calculate the aggregated cell-cell communication network 
+cellchat <- aggregateNet(cellchat)
+
+
+##############################
+# Circle Plots
+##############################
+
+# Visualise
+groupSize <- as.numeric(table(cellchat@idents))
+
+# keep only interactions and directions of interest four count and weight
+# count  
+mat.count.out <- cellchat@net$count
+# Keep only SPP1/C1QC as senders
+mat.count.out[!rownames(mat.count.out) %in% c("Myeloid: Macro-SPP1","Myeloid: Macro-C1QC"), ] <- 0
+# Remove SPP1/C1QC as receivers
+mat.count.out[, colnames(mat.count.out) %in% c("Myeloid: Macro-SPP1","Myeloid: Macro-C1QC")] <- 0
+
+# weight
+mat.weight.out <- cellchat@net$weight
+# Keep only SPP1/C1QC as senders
+mat.weight.out[!rownames(mat.weight.out) %in% c("Myeloid: Macro-SPP1","Myeloid: Macro-C1QC"), ] <- 0
+# Remove SPP1/C1QC as receivers
+mat.weight.out[, colnames(mat.weight.out) %in% c("Myeloid: Macro-SPP1","Myeloid: Macro-C1QC")] <- 0
+
+# interaction counts
+# show circle plot
+netVisual_circle(
+  mat.count.out,
+  vertex.weight = groupSize,
+  weight.scale = TRUE,
+  label.edge = FALSE,
+  title.name = "Outgoing interactions from Macro-SPP1/C1QC")
+
+# interaction weights
+# show circle plot
+par(mar = c(1, 1, 1, 1))
+d6 <- netVisual_circle(
+  mat.weight.out,
+  sources.use = c("Myeloid: Macro-SPP1","Myeloid: Macro-C1QC"),
+  vertex.weight = groupSize,
+  weight.scale = TRUE,
+  label.edge = FALSE,
+  margin = 0,
+  title.name = "Interaction Strength (Stromal cells)")
+d6
+
+
+
+##############################
 # HPC friendly cellchat data processing
 ##############################
 
@@ -406,7 +548,7 @@ netVisual_circle(
 
 # classification of targets and source cells
 sources = c("Myeloid: Macro-C1QC", "Myeloid: Macro-SPP1")
-targets.fibro <- unique(pbmc@meta.data$cell_type_detailed[pbmc@meta.data$clMidwayPr == "Fibro"])
+targets.fibro <- unique(pbmc_stromal@meta.data$cell_type_detailed[pbmc@meta.data$clMidwayPr == "Fibro"])
 
 
 ##############################
@@ -532,7 +674,7 @@ ccnn_order <- data.frame(
 )
 
 # create ordered figure
-d6 <- netVisual_bubble(cellchat, sources.use = sources, 
+e6 <- netVisual_bubble(cellchat, sources.use = sources, 
                  targets.use = c(targets.fibro),
                  remove.isolate = TRUE, sort.by.source = T, sort.by.target = T,
                  pairLR.use = ccnn_order,
@@ -542,7 +684,7 @@ d6 <- netVisual_bubble(cellchat, sources.use = sources,
   
   coord_flip() +
   RotatedAxis()
-d6
+e6
 
 
 ##############################
@@ -551,15 +693,16 @@ d6
 
 # Figure 7
 ggdraw() +
-  draw_plot(a6, x = 0, y = .5, width = .5, height = .5) +
-  draw_plot(b6, x = .5, y = .5, width = .2, height = .5) +
-  draw_plot(c6, x = .7, y = .5, width = .3, height = .5) +
-  draw_plot(d6, x = 0, y = 0, width = 1, height = .45) +
-  draw_plot_label(label = c("A", "B", "C", "D"), size = 15, 
-                  x = c(0, .5, .7, 0), 
-                  y = c(1, 1, 1, .5))
+  draw_plot(a6, x = 0, y = .66, width = .5, height = .33) +
+  draw_plot(b6, x = .5, y = .66, width = .2, height = .33) +
+  draw_plot(c6, x = .7, y = .66, width = .3, height = .33) +
+  draw_plot(d6, x = 0, y = .33, width = 1, height = .25) +
+  draw_plot(e6, x = 0, y = 0, width = 1, height = .3) +
+  draw_plot_label(label = c("A", "B", "C", "D", "E"), size = 15, 
+                  x = c(0, .5, .7, .2, 0), 
+                  y = c(1, 1, 1, .66, .33))
 # save figure
-ggsave("../figures/Figure_6_cellchat_Fibro.jpg", width = 40, height = 30, units = c("cm"), dpi = 300)
+ggsave("../figures/Figure_6_cellchat_Fibro.jpg", width = 40, height = 45, units = c("cm"), dpi = 300)
 
 
 ##############################
@@ -1140,6 +1283,7 @@ library(DOSE)
 library(ReactomePA)
 library(enrichplot)
 
+
 ##############################
 # GSEA enrichment analysis
 ##############################
@@ -1150,7 +1294,7 @@ mega_heatmap_up <- readRDS("../data/mega_heatmap_up_Fibro.rds")
 x <- c("TGFB1_1", "VEGFA_1", "RETN_1", "HBEGF_1")
 group_labels <- c("TGFB1_1" = "TGFB", "VEGFA_1" = "VEGF", "RETN_1" = "RETN", "HBEGF_1" = "HBEGF")
 
-# ---- build per-group gene lists (ENTREZ) + collect backgrounds ----
+# build per-group gene lists (ENTREZ) + collect backgrounds
 gene_list <- list()
 background_list <- list()
 top_n_genes <- 250
@@ -1183,7 +1327,7 @@ for (numb in x) {
   background_list[[group_labels[[numb]]]] <- background_expressed_genes
 }
 
-# ---- shared universe: union of all three backgrounds, converted once ----
+# shared universe: union of all three backgrounds, converted once
 all_background_symbols <- unique(unlist(background_list))
 
 universe_ids <- bitr(
@@ -1193,7 +1337,7 @@ universe_ids <- bitr(
   OrgDb    = org.Hs.eg.db
 )$ENTREZID
 
-# ---- compareCluster across the three groups ----
+# compareCluster across the three groups
 cc <- compareCluster(
   geneCluster   = gene_list,
   fun           = "enrichGO",
@@ -1205,7 +1349,7 @@ cc <- compareCluster(
 
 cc_simplified <- clusterProfiler::simplify(cc)
 
-# ---- plot ----
+# plot
 dotplot(cc_simplified, showCategory = 20) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +

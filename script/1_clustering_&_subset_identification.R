@@ -246,6 +246,7 @@ c1
 d1 <- DotPlot(pbmc, features = 'CES1', cols = cont_2) + RotatedAxis() +
   theme(axis.title.x=element_blank(), axis.title.y=element_blank())
 d1
+d1$data
 
 # Stromal have high levels of CES1
 # check with just immune cells
