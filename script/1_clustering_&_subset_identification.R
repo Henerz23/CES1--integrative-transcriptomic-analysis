@@ -270,7 +270,7 @@ ggdraw() +
   draw_plot(a1, x = 0, y = .5, width = .5, height = .5) +
   draw_plot(b1, x = .5, y = .5, width = .5, height = .5) +
   draw_plot(c1, x = 0, y = 0, width = .5, height = .5) +
-  draw_plot(d1, x = .5, y = 0, width = .3, height = .5) +
+  draw_plot(d1, x = .6, y = 0, width = .3, height = .5) +
   draw_plot_label(label = c("A", "B", "C", "D"), size = 15, 
                   x = c(0, .5, 0, .5), 
                   y = c(1, 1, .5, .5))

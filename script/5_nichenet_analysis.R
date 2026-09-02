@@ -409,7 +409,7 @@ library(cowplot)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # load in the pbmc
-pbmc <- readRDS("../data/pbmc_final.rds")
+# pbmc <- readRDS("../data/pbmc_final.rds")
 
 # load in the results from nichenet
 results <- readRDS("../data/nichenet_results_300.rds")

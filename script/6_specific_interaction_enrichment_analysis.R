@@ -127,7 +127,8 @@ c5 <- heatmap_spp1_cd8_up %>% make_heatmap_ggplot(
     color = "purple",
     legend_title = "Regulatory\npotential"
   ) +
-  theme(axis.text.x = element_text(face = "italic")) +
+  theme(axis.text.x = element_text(face = "italic"),
+        legend.text = element_text(angle = 30)) +
   ggtitle("Unique Genes from \nlr_spp1_TCD8_up")
 c5
 
@@ -144,10 +145,11 @@ d5 <- heatmap_spp1_cd4_up %>% make_heatmap_ggplot(
   color = "purple",
   legend_title = "Regulatory\npotential"
 ) +
-  theme(axis.text.x = element_text(face = "italic")) +
+  theme(axis.text.x = element_text(face = "italic"),
+        legend.text = element_text(angle = 30)) +
   ggtitle("Unique Genes from \nlr_spp1_TCD4_up")
 d5
-
+?theme()
 # C1QC- CD8
 # No genes present
 
@@ -176,7 +178,7 @@ mega_heatmap_up <- readRDS("../data/mega_heatmap_up.rds")
 x <- c("RETN_1", "RETN_2", "APP_1", "APP_2")
 group_labels <- c("RETN_1" = "RETN-CD8", "RETN_2" = "RETN-CD4", "APP_1" = "APP-CD8", "APP_2" = "APP-CD4")
 
-# ---- build per-group gene lists (ENTREZ) + collect backgrounds ----
+# build per-group gene lists (ENTREZ) + collect backgrounds
 gene_list <- list()
 background_list <- list()
 top_n_genes <- 250
@@ -209,7 +211,7 @@ for (numb in x) {
   background_list[[group_labels[[numb]]]] <- background_expressed_genes
 }
 
-# ---- shared universe: union of all three backgrounds, converted once ----
+# shared universe: union of all three backgrounds, converted once
 all_background_symbols <- unique(unlist(background_list))
 
 universe_ids <- bitr(
@@ -219,7 +221,7 @@ universe_ids <- bitr(
   OrgDb    = org.Hs.eg.db
 )$ENTREZID
 
-# ---- compareCluster across the three groups ----
+# compareCluster across the three groups
 cc <- compareCluster(
   geneCluster   = gene_list,
   fun           = "enrichGO",
@@ -231,7 +233,7 @@ cc <- compareCluster(
 
 cc_simplified <- clusterProfiler::simplify(cc)
 
-# ---- plot ----
+# plot
 dotplot(cc_simplified, showCategory = 20) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
